@@ -1,2 +1,88 @@
 # Public-Square-portable-Air-quality-monitoring-programme
 Tracking local air quality data
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kampala Air Quality Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        /* Custom styling for the popup */
+        .leaflet-popup-content-wrapper { border-radius: 8px; }
+        .leaflet-popup-content { font-size: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize the map (Centered on Kampala)
+    const map = L.map('map').setView([0.3136, 32.5811], 12); 
+
+    // Add the street view map tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Define the PM2.5 Danger Color Scale (EPA Standards)
+    function getPmColor(pmValue) {
+        if (pmValue >= 250.5) return '#800000'; // Maroon (Hazardous)
+        if (pmValue >= 150.5) return '#800080'; // Purple (Very Unhealthy)
+        if (pmValue >= 55.5)  return '#FF0000'; // Red (Unhealthy)
+        if (pmValue >= 35.5)  return '#FFA500'; // Orange (Unhealthy for Sensitive Groups)
+        if (pmValue >= 12.1)  return '#FFFF00'; // Yellow (Moderate)
+        return '#00FF00';                       // Green (Good)
+    }
+
+    // Your Extracted AirCasting Sessions
+    const sessions = [
+        { id: "1923880", contributor: "Joseph Beyanga" },
+        { id: "1923881", contributor: "Joseph Beyanga" },
+        { id: "1936283", contributor: "Raymond Mujuni" },
+        { id: "1924305", contributor: "Owomugisha Julian" },
+        { id: "1925254", contributor: "Owomugisha Julian" },
+        { id: "1925271", contributor: "Owomugisha Julian" },
+        { id: "1928434", contributor: "Owomugisha Julian" },
+        { id: "1923888", contributor: "Arinaitwe Ritah" },
+        { id: "1924538", contributor: "Boda Boda Riders" },
+        { id: "1924918", contributor: "Jackie Asiimwe" },
+        { id: "1928448", contributor: "Canary Mugume" },
+        { id: "1936603", contributor: "Mackline Arinda" },
+        { id: "1937845", contributor: "Daniel Sanya (Temp)" },
+        { id: "1938085", contributor: "Inasio Govule" }
+    ];
+
+    // Fetch the live data and plot it
+    sessions.forEach(session => {
+        const apiUrl = `https://aircasting.org/api/sessions/${session.id}.json`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const measurements = data.measurements || [];
+
+                measurements.forEach(point => {
+                    L.circleMarker([point.latitude, point.longitude], {
+                        radius: 4,
+                        fillColor: getPmColor(point.value),
+                        color: "#000",
+                        weight: 0.5,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>Value:</b> ${point.value} <br>
+                        <b>Contributor:</b> ${session.contributor}
+                    `); 
+                });
+            })
+            .catch(error => console.error(`Error loading session ${session.id}:`, error));
+    });
+</script>
+
+</body>
+</html>
